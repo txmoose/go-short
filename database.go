@@ -26,5 +26,8 @@ func InitializeDB() {
 		fmt.Println(err.Error())
 		panic("Can not connect to DB")
 	}
-	DB.AutoMigrate(&Slug{})
+	err := DB.AutoMigrate(&Slug{})
+	if err != nil {
+		return
+	}
 }
