@@ -2,7 +2,11 @@ package main
 
 import (
 	"crypto/rand"
+	"errors"
 	"math/big"
+	"strings"
+
+	"github.com/anaskhan96/soup"
 )
 
 // GenerateSlug Found and modified from here
@@ -28,4 +32,25 @@ func GenerateSlug(n int) (string, error) {
 		candidateSlug, err = GenerateSlug(n)
 	}
 	return candidateSlug, nil
+}
+
+//GetSiteTitle Should go out and get the title of the web page at a given domain
+func GetSiteTitle(url string) (string, error) {
+	//Telling soup to go get the site
+	resp, err := soup.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	//doc to hold the actual HTML document
+	doc := soup.HTMLParse(resp)
+
+	//Getting the title out of doc
+	title := doc.Find("title").Text()
+
+	if title == "" {
+		return title, errors.New("no title found")
+	}
+
+	return strings.TrimSpace(title), nil
 }

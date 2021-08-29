@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"net/http"
+	"net/url"
 )
 
 // TODO figure out how to get this out of env vars
@@ -57,13 +58,18 @@ func ShowSlugDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateNewSlug creates a new slug, will generate a random slug if necessary or use passed custom slug
-//TODO Make code go get site_title or use domain name if can't get title
 func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var slug Slug
 	// Decode request body into a slug Struct
 	err := json.NewDecoder(r.Body).Decode(&slug)
 	// if JSON decoding fails, we throw an HTTP 400
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	// Parse the URL in the body, and if it is invalid, tell the user
+	u, err := url.Parse(slug.TargetURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
@@ -84,6 +90,12 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "Slug already in Use", http.StatusBadRequest)
 		}
+	}
+
+	// Go out and get the title of the site
+	slug.SiteTitle, err = GetSiteTitle(slug.TargetURL)
+	if err != nil {
+		slug.SiteTitle = u.Hostname()
 	}
 
 	DB.Create(&slug)
