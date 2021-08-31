@@ -118,7 +118,7 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 		// if slug is passed as part of the request body, we ensure it doesn't already exist
 		//TODO implement common word list to also disallow
 	} else {
-		slug, err = GetSlugFromDB(slug.Slug)
+		_, err = GetSlugFromDB(slug.Slug)
 		// this is confusing, but if we get Record Not Found Error, we're good to continue
 		// but if we get anything _other_ than Record Not Found, we throw HTTP 400 and let user know
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
