@@ -23,13 +23,20 @@ func init() {
 	viper.SetEnvPrefix("gs")
 
 	// Checking for the SlugLength ENV VAR
-	viper.BindEnv("config.SlugLength", "GS_SLUGLENGTH")
+	err := viper.BindEnv("config.SlugLength", "GS_SLUGLENGTH")
+	if err != nil {
+		return
+	}
 
 	// If we can't read the config file, panic and bail out
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Fatal("Fatal error config file: default\n", err)
-		os.Exit(1)
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			log.Fatal("Config File Not Found, please create ./config/go-short.yaml")
+			os.Exit(1)
+		} else {
+			log.Fatal("Something went wrong reading the file", err.Error())
+			os.Exit(1)
+		}
 	}
 
 	// If DSN isn't set in the config file, panic and bail out
