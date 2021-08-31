@@ -4,14 +4,47 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 )
 
-// TODO figure out how to get this out of env vars
-const SlugLength = 8
+// Initialize Viper for config and bail out if things are missing
+func init() {
+	// Config file name and location
+	viper.SetConfigName("go-short")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("./config/")
+
+	// Setting prefix for ENV VARS
+	viper.SetEnvPrefix("gs")
+
+	// Checking for the SlugLength ENV VAR
+	viper.BindEnv("config.SlugLength", "GS_SLUGLENGTH")
+
+	// If we can't read the config file, panic and bail out
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal("Fatal error config file: default\n", err)
+		os.Exit(1)
+	}
+
+	// If DSN isn't set in the config file, panic and bail out
+	if viper.GetString("config.dsn") == "" {
+		log.Fatal("Database information not provided.  Please set dsn in config.")
+		os.Exit(1)
+	}
+
+	// Set a default value for SlugLength if it isn't set in ENV VARs nor config
+	viper.SetDefault("config.SlugLength", 4)
+
+	// Some debug output
+	log.Printf("Max Slug Length: %d", viper.GetInt("config.SlugLength"))
+	log.Printf("DSN: %s", viper.GetString("config.dsn"))
+}
 
 // initializeRouter the routes
 func initializeRouter() {
@@ -61,6 +94,7 @@ func ShowSlugDetail(w http.ResponseWriter, r *http.Request) {
 func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var slug Slug
+	SlugLength := viper.GetInt("config.SlugLength")
 	// Decode request body into a slug Struct
 	err := json.NewDecoder(r.Body).Decode(&slug)
 	// if JSON decoding fails, we throw an HTTP 400
@@ -93,8 +127,10 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Go out and get the title of the site
-	slug.SiteTitle, err = GetSiteTitle(slug.TargetURL)
+	log.Printf("getting a site title")
+	slug.SiteTitle, err = GetSiteTitle(u.String())
 	if err != nil {
+		log.Printf("Didn't get a site title")
 		slug.SiteTitle = u.Hostname()
 	}
 
@@ -106,11 +142,10 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 }
 
 //ShowRecentSlugs should show only N most recent slugs
-//TODO limit this to some number N
 func ShowRecentSlugs(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var slugs []Slug
-	DB.Find(&slugs)
+	DB.Limit(10).Find(&slugs)
 	err := json.NewEncoder(w).Encode(slugs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

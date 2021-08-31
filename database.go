@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -20,13 +21,11 @@ type Slug struct {
 var DB *gorm.DB
 var err error
 
-// dsn database Connection string
-// TODO Make this pull from env vars rather than hard code
-// TODO Is MySQL the best option?
-const dsn = "golang:password!@tcp(zealot.lan:3306)/go-practice?parseTime=true"
-
 // InitializeDB creates database and does migrations if necessary
 func InitializeDB() {
+	// dsn database Connection string
+	// TODO Is MySQL the best option?
+	dsn := viper.GetString("config.dsn")
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Println(err.Error())
