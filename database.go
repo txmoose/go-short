@@ -10,10 +10,9 @@ import (
 
 // Slug DB Table Mapping
 type Slug struct {
-	ID        uint   `gorm:"primaryKey"`
 	SiteTitle string `json:"site_title"`
 	TargetURL string `json:"target_url"`
-	Slug      string `gorm:"index,unique"`
+	Slug      string `gorm:"PrimaryKey"`
 	HitCount  uint32 `json:"hit_count"`
 }
 
@@ -40,8 +39,6 @@ func InitializeDB() {
 // GetSlugFromDB convenience function to get slugs from database
 func GetSlugFromDB(s string) (Slug, error) {
 	var slug Slug
-	// This omits the ID, but it still displays as a 0 rather than the actual ID
-	// TODO Figure out how to omit ID field from the JSON completely on select
 	result := DB.Select([]string{"site_title", "target_url", "slug", "hit_count"}).First(&slug, "slug = ? ", s)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return slug, result.Error
