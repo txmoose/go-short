@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 )
 
 // Initialize Viper for config and bail out if things are missing
@@ -32,17 +31,14 @@ func init() {
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Fatal("Config File Not Found, please create ./config/go-short.yaml")
-			os.Exit(1)
 		} else {
 			log.Fatal("Something went wrong reading the file", err.Error())
-			os.Exit(1)
 		}
 	}
 
 	// If DSN isn't set in the config file, panic and bail out
 	if viper.GetString("config.dsn") == "" {
 		log.Fatal("Database information not provided.  Please set dsn in config.")
-		os.Exit(1)
 	}
 
 	// Set a default value for SlugLength if it isn't set in ENV VARs nor config
@@ -76,6 +72,7 @@ func RedirectToTargetURL(w http.ResponseWriter, r *http.Request) {
 	slug.HitCount++
 	DB.Save(&slug)
 	http.Redirect(w, r, slug.TargetURL, 301)
+	return
 }
 
 // ShowSlugDetail shows the details of a slug, so you can know your redirect is safe
@@ -87,6 +84,7 @@ func ShowSlugDetail(w http.ResponseWriter, r *http.Request) {
 	// if GetSlugFromDB throws an error, we're gonna throw HTTP 500
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	// See this line a lot, this is a JSON encoder writing to the Response Writer
 	// To send a JSON back to the user
@@ -94,6 +92,7 @@ func ShowSlugDetail(w http.ResponseWriter, r *http.Request) {
 	// if JSON encoding fails, we throw an HTTP 500
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -102,17 +101,25 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var slug Slug
 	SlugLength := viper.GetInt("config.SlugLength")
+
 	// Decode request body into a slug Struct
 	err := json.NewDecoder(r.Body).Decode(&slug)
+
 	// if JSON decoding fails, we throw an HTTP 400
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	// Parse the URL in the body, and if it is invalid, tell the user
 	u, err := url.Parse(slug.TargetURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if u.Scheme == "" {
+		u.Scheme = "http"
 	}
 
 	// if slug is not passed as part of the request body, we generate a random one
@@ -121,6 +128,7 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 		// if we have a generation error, throw HTTP 500
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		// if slug is passed as part of the request body, we ensure it doesn't already exist
 		//TODO implement common word list to also disallow
@@ -130,6 +138,7 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 		// but if we get anything _other_ than Record Not Found, we throw HTTP 400 and let user know
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "Slug already in Use", http.StatusBadRequest)
+			return
 		}
 	}
 
@@ -139,12 +148,14 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("Didn't get a site title")
 		slug.SiteTitle = u.Hostname()
+		log.Printf("Using %s", slug.SiteTitle)
 	}
 
 	DB.Create(&slug)
 	err = json.NewEncoder(w).Encode(slug)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -156,6 +167,7 @@ func ShowRecentSlugs(w http.ResponseWriter, _ *http.Request) {
 	err := json.NewEncoder(w).Encode(slugs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
