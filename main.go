@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
-	"github.com/spf13/viper"
-	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/gorilla/mux"
+	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 // Initialize Viper for config and bail out if things are missing
@@ -137,9 +138,14 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 		// this is confusing, but if we get Record Not Found Error, we're good to continue
 		// but if we get anything _other_ than Record Not Found, we throw HTTP 400 and let user know
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
-			http.Error(w, "Slug already in Use", http.StatusBadRequest)
+			http.Error(w, "Slug already in Use", http.StatusConflict)
 			return
 		}
+	}
+
+	if CheckTargetUrlExists(slug.TargetURL) {
+		http.Error(w, "URL Already in DB", http.StatusConflict)
+		return
 	}
 
 	// Go out and get the title of the site

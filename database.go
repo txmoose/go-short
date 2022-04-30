@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -39,9 +40,19 @@ func InitializeDB() {
 // GetSlugFromDB convenience function to get slugs from database
 func GetSlugFromDB(s string) (Slug, error) {
 	var slug Slug
-	result := DB.Select([]string{"site_title", "target_url", "slug", "hit_count"}).First(&slug, "slug = ? ", s)
+	result := DB.Select([]string{"slug"}).First(&slug, "slug = ? ", s)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return slug, result.Error
 	}
 	return slug, nil
+}
+
+// CheckTargetUrlExists returns true if a URL is already in the database
+func CheckTargetUrlExists(url string) bool {
+	var slug Slug
+	result := DB.Select([]string{"target_url"}).First(&slug, "target_url = ? ", url)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return false
+	}
+	return true
 }
