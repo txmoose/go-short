@@ -18,6 +18,7 @@ WORKDIR /
 
 COPY config.yaml /config.yaml
 COPY --from=build /go-short /go-short
+ENV GS_SLUG_LENGTH=4
 
 EXPOSE 8000
 
