@@ -1,0 +1,6 @@
+config:
+  slug_length: 8
+  db_user: go-short
+  db_host: mysql
+  db_port: 3306
+  db_name: go-short
