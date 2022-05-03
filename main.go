@@ -25,7 +25,7 @@ func init() {
 	// Checking for the SlugLength ENV VAR
 	err := viper.BindEnv("config.slug_length", "GS_SLUG_LENGTH")
 	if err != nil {
-		return
+		log.Fatal("No Slug Length Set", err.Error())
 	}
 
 	// If we can't read the config file, panic and bail out
@@ -37,11 +37,8 @@ func init() {
 		}
 	}
 
-	// Set a default value for SlugLength if it isn't set in ENV VARs nor config
-	viper.SetDefault("config.SlugLength", 4)
-
 	// Some debug output
-	log.Printf("Max Slug Length: %d", viper.GetInt("config.SlugLength"))
+	log.Printf("Max Slug Length: %d", viper.GetInt("config.slug_length"))
 }
 
 // initializeRouter the routes
@@ -95,7 +92,7 @@ func ShowSlugDetail(w http.ResponseWriter, r *http.Request) {
 func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var slug Slug
-	SlugLength := viper.GetInt("config.SlugLength")
+	SlugLength := viper.GetInt("config.slug_length")
 
 	// Decode request body into a slug Struct
 	err := json.NewDecoder(r.Body).Decode(&slug)
