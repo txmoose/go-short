@@ -1,3 +1,0 @@
-config:
-  SlugLength: 8
-  dsn: "golang:password!@tcp(zealot.lan:3306)/go-practice?parseTime=true"

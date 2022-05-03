@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
@@ -25,13 +26,31 @@ var err error
 func InitializeDB() {
 	// dsn database Connection string
 	// TODO Is MySQL the best option?
-	dsn := viper.GetString("config.dsn")
+	// golang:GoTmpPasswd@tcp(zealot.lan:3306)/go-practice?parseTime=true
+	// Defaults for DB Connection Info
+	viper.SetDefault("config.db_user", "go-short")
+	viper.SetDefault("config.db_host", "mysql")
+	viper.SetDefault("config.db_port", "3306")
+	viper.SetDefault("config.db_name", "go-short")
+	err := viper.BindEnv("config.db_pass", "GS_DB_PASS")
+	if err != nil {
+		log.Fatal("No Database Password Set", err.Error())
+	}
+
+	dbUser := viper.GetString("config.db_user")
+	dbHost := viper.GetString("config.db_host")
+	dbPort := viper.GetString("config.db_port")
+	dbName := viper.GetString("config.db_name")
+	dbPass := viper.GetString("config.db_pass")
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName)
+
 	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		fmt.Println(err.Error())
 		panic("Can not connect to DB")
 	}
-	err := DB.AutoMigrate(&Slug{})
+	err = DB.AutoMigrate(&Slug{})
 	if err != nil {
 		return
 	}

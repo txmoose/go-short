@@ -15,15 +15,15 @@ import (
 // Initialize Viper for config and bail out if things are missing
 func init() {
 	// Config file name and location
-	viper.SetConfigName("go-short")
+	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("./config/")
+	viper.AddConfigPath(".")
 
 	// Setting prefix for ENV VARS
 	viper.SetEnvPrefix("gs")
 
 	// Checking for the SlugLength ENV VAR
-	err := viper.BindEnv("config.SlugLength", "GS_SLUGLENGTH")
+	err := viper.BindEnv("config.slug_length", "GS_SLUG_LENGTH")
 	if err != nil {
 		return
 	}
@@ -31,15 +31,10 @@ func init() {
 	// If we can't read the config file, panic and bail out
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Fatal("Config File Not Found, please create ./config/go-short.yaml")
+			log.Fatal("Config File Not Found, please create ./config.yaml")
 		} else {
 			log.Fatal("Something went wrong reading the file", err.Error())
 		}
-	}
-
-	// If DSN isn't set in the config file, panic and bail out
-	if viper.GetString("config.dsn") == "" {
-		log.Fatal("Database information not provided.  Please set dsn in config.")
 	}
 
 	// Set a default value for SlugLength if it isn't set in ENV VARs nor config
@@ -47,7 +42,6 @@ func init() {
 
 	// Some debug output
 	log.Printf("Max Slug Length: %d", viper.GetInt("config.SlugLength"))
-	log.Printf("DSN: %s", viper.GetString("config.dsn"))
 }
 
 // initializeRouter the routes
