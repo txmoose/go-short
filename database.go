@@ -66,12 +66,12 @@ func GetSlugFromDB(s string) (Slug, error) {
 	return slug, nil
 }
 
-// CheckTargetUrlExists returns true if a URL is already in the database
-func CheckTargetUrlExists(url string) bool {
+// GetURLFromDB convenience function to get existing URL records from database
+func GetURLFromDb(url string) (Slug, error) {
 	var slug Slug
 	result := DB.Select([]string{"target_url"}).First(&slug, "target_url = ? ", url)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return false
+		return slug, result.Error
 	}
-	return true
+	return slug, nil
 }

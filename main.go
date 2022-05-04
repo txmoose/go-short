@@ -23,19 +23,7 @@ func init() {
 	viper.SetEnvPrefix("gs")
 
 	// Checking for the SlugLength ENV VAR
-	err := viper.BindEnv("config.slug_length", "GS_SLUG_LENGTH")
-	if err != nil {
-		log.Fatal("No Slug Length Set", err.Error())
-	}
-
-	// If we can't read the config file, panic and bail out
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Fatal("Config File Not Found, please create ./config.yaml")
-		} else {
-			log.Fatal("Something went wrong reading the file", err.Error())
-		}
-	}
+	viper.BindEnv("config.slug_length", "GS_SLUG_LENGTH")
 
 	// Some debug output
 	log.Printf("Max Slug Length: %d", viper.GetInt("config.slug_length"))
@@ -43,6 +31,7 @@ func init() {
 
 // initializeRouter the routes
 func initializeRouter() {
+	log.Print("Initializing Router on port :8000")
 	router := mux.NewRouter()
 	router.HandleFunc("/create", CreateNewSlug).Methods("POST")
 	router.HandleFunc("/recent", ShowRecentSlugs).Methods("GET")
@@ -63,6 +52,7 @@ func RedirectToTargetURL(w http.ResponseWriter, r *http.Request) {
 	}
 	slug.HitCount++
 	DB.Save(&slug)
+	log.Printf("Redirecting %s to %s", slug.Slug, slug.TargetURL)
 	http.Redirect(w, r, slug.TargetURL, 301)
 	return
 }
@@ -80,6 +70,7 @@ func ShowSlugDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	// See this line a lot, this is a JSON encoder writing to the Response Writer
 	// To send a JSON back to the user
+	log.Printf("Getting Details for %s", slug.Slug)
 	err := json.NewEncoder(w).Encode(slug)
 	// if JSON encoding fails, we throw an HTTP 500
 	if err != nil {
@@ -138,12 +129,22 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "URL Already in DB", http.StatusConflict)
 		return
 	}
+	existingUrl, err := GetURLFromDb(slug.TargetURL)
+	if err == nil {
+		log.Printf("Existing record, returning %s", existingUrl.Slug)
+		err := json.NewEncoder(w).Encode(existingUrl)
+		// if JSON encoding fails, we throw an HTTP 500
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 
 	// Go out and get the title of the site
-	log.Printf("getting a site title")
+	log.Printf("getting a site title for %s", slug.TargetURL)
 	slug.SiteTitle, err = GetSiteTitle(u.String())
 	if err != nil {
-		log.Printf("Didn't get a site title")
+		log.Printf("Didn't get a site title for %s", slug.TargetURL)
 		slug.SiteTitle = u.Hostname()
 		log.Printf("Using %s", slug.SiteTitle)
 	}
@@ -160,6 +161,7 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 func ShowRecentSlugs(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var slugs []Slug
+	log.Print("Recent Slugs")
 	DB.Limit(10).Find(&slugs)
 	err := json.NewEncoder(w).Encode(slugs)
 	if err != nil {
