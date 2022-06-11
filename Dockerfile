@@ -7,11 +7,12 @@ COPY go.sum ./
 
 RUN go mod download
 COPY *.go ./
-RUN go build -o /go-short
+RUN GOOS=linux GOARCH=arm64 go build -o /go-short 
+RUN chmod +x /go-short
 EXPOSE 8000
 
 # DEPLOY
-FROM ubuntu:20.04
+FROM multiarch/ubuntu-core:arm64-bionic
 
 WORKDIR /
 
