@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-short-mysql
+  namespace: go-short
+  labels:
+    app: go-short-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-short-mysql
+  template:
+    metadata:
+      labels:
+        app: go-short-mysql
+    spec:
+      containers:
+      - name: mysql
+        image: registry.lan:5000/mysql-server:8.0-aarch64
+        livenessProbe:
+          exec:
+            command:
+              - ls
+              - /var/lib/mysql/lost+found
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: MYSQL_DATABASE
+          value: go-short
+        - name: MYSQL_USER
+          value: go-short
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-root-password
+              key: mysql_root_password
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-user-password
+              key: mysql_password
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-volume
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-volume
+        persistentVolumeClaim:
+          claimName: mysql-pvc

@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  labels:
+    app: go-short
+    component: ingress-controller
+    type: nginx
+  name: go-short
+  namespace: go-short
+spec:
+  rules:
+  - host: short.txmoose.cloud
+    http:
+      paths:
+      - backend:
+          service:
+            name: go-short
+            port:
+              number: 8000
+        path: /
+        pathType: Prefix

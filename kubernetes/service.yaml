@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: go-short
+  labels:
+    app: go-short-mysql
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: go-short-mysql
+  clusterIP: None
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-short
+  namespace: go-short
+  labels:
+    app: go-short
+spec:
+  ports:
+    - port: 8000
+      name: go-short
+  selector:
+    app: go-short
+  clusterIP: None

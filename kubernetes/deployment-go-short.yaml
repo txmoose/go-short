@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-short
+  namespace: go-short
+  labels:
+    app: go-short
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-short
+  template:
+    metadata:
+      labels:
+        app: go-short
+    spec:
+      containers:
+      - name: go-short
+        image: registry.lan:5000/go-short:v0.0.1-arm64
+        imagePullPolicy: Always
+        env:
+        - name: GS_SLUG_LENGTH
+          value: "8"
+        - name: GS_DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: mysql-user-password
+              key: mysql_password
+        ports:
+        - containerPort: 8000
