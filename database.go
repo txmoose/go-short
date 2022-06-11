@@ -37,6 +37,11 @@ func InitializeDB() {
 		log.Fatal("No Database Password Set", err.Error())
 	}
 
+	viper.BindEnv("config.db_user", "GS_DB_USER")
+	viper.BindEnv("config.db_host", "GS_DB_HOST")
+	viper.BindEnv("config.db_port", "GS_DB_PORT")
+	viper.BindEnv("config.db_name", "GS_DB_NAME")
+
 	dbUser := viper.GetString("config.db_user")
 	dbHost := viper.GetString("config.db_host")
 	dbPort := viper.GetString("config.db_port")
@@ -69,7 +74,7 @@ func GetSlugFromDB(s string) (Slug, error) {
 // GetURLFromDB convenience function to get existing URL records from database
 func GetURLFromDb(url string) (Slug, error) {
 	var slug Slug
-	result := DB.Select([]string{"target_url"}).First(&slug, "target_url = ? ", url)
+	result := DB.Where("target_url = ? ", url).First(&slug)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return slug, result.Error
 	}

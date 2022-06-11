@@ -125,19 +125,16 @@ func CreateNewSlug(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if CheckTargetUrlExists(slug.TargetURL) {
-		http.Error(w, "URL Already in DB", http.StatusConflict)
-		return
-	}
 	existingUrl, err := GetURLFromDb(slug.TargetURL)
 	if err == nil {
 		log.Printf("Existing record, returning %s", existingUrl.Slug)
+		w.WriteHeader(http.StatusConflict)
 		err := json.NewEncoder(w).Encode(existingUrl)
 		// if JSON encoding fails, we throw an HTTP 500
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
+		return
 	}
 
 	// Go out and get the title of the site
