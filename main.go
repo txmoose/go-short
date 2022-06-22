@@ -33,12 +33,34 @@ func init() {
 func initializeRouter() {
 	log.Print("Initializing Router on port :8000")
 	router := mux.NewRouter()
+	router.HandleFunc("/", CreateNewSlugWebForm).Methods("GET")
 	router.HandleFunc("/create", CreateNewSlug).Methods("POST")
 	router.HandleFunc("/recent", ShowRecentSlugs).Methods("GET")
 	router.HandleFunc("/{slug}", RedirectToTargetURL).Methods("GET")
 	router.HandleFunc("/{slug}/detail", ShowSlugDetail).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8000", router))
+}
+
+// Hands out a web form so that slugs can be created without needing to know cURL
+func CreateNewSlugWebForm(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.Error(w, "404 not found here.", http.StatusNotFound)
+		return
+	}
+
+	switch r.Method {
+	case "GET":
+		http.ServeFile(w, r, "www/create.html")
+	
+	case "POST":
+		var newSlug Slug
+		newSlug.Slug = r.FormValue("slug")
+		newSlug.TargetURL = r.FormValue("targetUrl")
+		
+	default:
+		http.Error(w, "Sorry, only GET and POST methods are supported.", http.StatusMethodNotAllowed)
+	}
 }
 
 // RedirectToTargetURL what it says on the tin
